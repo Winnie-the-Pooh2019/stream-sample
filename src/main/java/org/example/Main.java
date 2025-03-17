@@ -3,7 +3,9 @@ package org.example;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.*;
 import java.lang.reflect.Type;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -13,36 +15,34 @@ import java.util.List;
  * - Map словарь
  */
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         Gson gson = new Gson();
 
-        String booksJson = "[{\n" +
-                "        \"name\": \"The Lord of the Rings\",\n" +
-                "        \"author\": \"J.R.R. Tolkien\",\n" +
-                "        \"publishingYear\": 1954,\n" +
-                "        \"isbn\": \"0395026468\",\n" +
-                "        \"publisher\": \"Allen & Unwin\"\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"name\": \"To Kill a Mockingbird\",\n" +
-                "        \"author\": \"Harper Lee\",\n" +
-                "        \"publishingYear\": 1960,\n" +
-                "        \"isbn\": \"0446310759\",\n" +
-                "        \"publisher\": \"HarperPerennial\"\n" +
-                "      }]";
+        Type typeToken = new TypeToken<List<Visitor>>() {}.getType();
 
-        Type typeToken = new TypeToken<List<Book>>() {}.getType();
+        FileReader reader = new FileReader("books.json");
+        List<Visitor> visitorList = gson.fromJson(reader, typeToken);
 
-        List<Book> bookList = gson.fromJson(booksJson, typeToken);
+        visitorList.forEach(visitor -> System.out.println(visitor));
 
-        bookList.forEach(book -> {
-            System.out.println(book.getName());
-        });
+//        2
 
-        Book[] books = gson.fromJson(booksJson, Book[].class);
+        List<Book> books = visitorList.stream()
+                .flatMap(visitor -> visitor.getBooks().stream())
+                .toList();
 
-        for (Book book1 : books) {
-            System.out.println(book1.getName());
-        }
+        System.out.println("Total number of favorite books: " + books.size());
+
+        List<Book> uniqueBooks = books.stream()
+                .distinct()
+                .toList();
+
+        System.out.println("Total number of unique books: " + uniqueBooks.size());
+
+//        3
+        uniqueBooks.stream()
+                .sorted(Comparator.comparingInt(Book::getPublishingYear))
+                .forEach(System.out::println);
+
     }
 }
